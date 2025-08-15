@@ -13,6 +13,9 @@ jobs:
       packages: write   # 推送镜像需要这个权限
 
     steps:
+      - name: lowercase repository name
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}" >> ${GITHUB_ENV}
+        
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -27,4 +30,4 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ env.IMAGE_NAME }}:latest
