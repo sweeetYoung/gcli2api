@@ -1,0 +1,14 @@
+{
+  "client_id": "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
+  "client_secret": "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",
+  "token": "ya29.a0AS3H6NwDuNUlYe_kJsX0sjLlHRF5Bs3ytJtJ2-ivnrHtjaDTtfOe7iXCih0_l6uG-uLznENfaPrlfxEJvAF_rEvkwTXdFwnNcnDRn3HXtEkBV2dt0SYoUZKUJc9EuQQxEiS4SYp2GdpHil_mB-_KjJhuM--GqKmNWufctmpDwVeb1waCgYKAYESARMSFQHGX2MirL56k66OPLE1H8B91UaX5g0181",
+  "refresh_token": "1//06y7dUQpoCgXwCgYIARAAGAYSNwF-L9Irz-lOO26gveZWxFtbmUtYC6mysZ_0QUsfVMRMbbkIZJToGPMC1fc8Y6-zbo3dFjgXHxQ",
+  "scopes": [
+    "https://www.googleapis.com/auth/cloud-platform",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile"
+  ],
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "project_id": "ceci-2",
+  "expiry": "2025-08-15T13:59:04+00:00"
+}
