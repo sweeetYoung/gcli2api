@@ -1,0 +1,14 @@
+{
+  "client_id": "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
+  "client_secret": "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",
+  "token": "ya29.A0AS3H6NxckkkTOhv7FIQXcgWdQQHi1laxIFQaoR5ReUfBgbEa-XMr4ItG5lh8Jk3Q_ZbHFwJLrfd5ElZAxh2-Cy3MPRExmeWIRIHmNusE5pIJnMienNq8xIaAHVS60BI45VexEXSvn7dbhOfsUlVzCa2LZBTT3Wohldb5HJ0TenjPDeNy7iIaJFqJiJ0u4gr6-BJ_GJLHv-qjaCgYKAVQSARYSFQHGX2Mif_-xL1KgIOLhEwD6U8C4KA0211",
+  "refresh_token": "1//06VtPIpK6JybRCgYIARAAGAYSNwF-L9IrRmgDbgWfsOpbDZtnsluunUS4K1BD0HKE3jPwtnzB8ph8864DG8trjAtHewDPYnwnECc",
+  "scopes": [
+    "https://www.googleapis.com/auth/cloud-platform",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile"
+  ],
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "project_id": "serenith-project",
+  "expiry": "2025-08-15T14:04:52+00:00"
+}
