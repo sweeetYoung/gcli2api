@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - PASSWORD=123456
+      - PASSWORD=pwd
     volumes:
       - ./data/creds:/app/geminicli/creds
     healthcheck:
