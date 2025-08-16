@@ -184,13 +184,13 @@ if __name__ == "__main__":
     
     print("启动配置:")
     print(f"  GeminiCLI客户端: 启用")
-    print("API地址 http://127.0.0.1:{port}/v1")
-    print("OAuth认证管理地址  http://127.0.0.1:{port}/auth")
+    print(f"API地址 http://127.0.0.1:{port}/v1")
+    print(f"OAuth认证管理地址  http://127.0.0.1:{port}/auth")
     print("默认密码 pwd")
     print("使用PASSWORD环境变量来设置密码")
 
     config = Config()
-    config.bind = ["0.0.0.0:{port}"]
+    config.bind = [f"0.0.0.0:{port}"]
     config.accesslog = "-"
     config.errorlog = "-"
     config.loglevel = "INFO"
