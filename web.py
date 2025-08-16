@@ -179,7 +179,7 @@ if __name__ == "__main__":
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
 
-    port = int(os.environ.get("PORT", "7861"))  # 取 Hugging Face 注入的 PORT，默认7861方便本地测试
+    port = int(os.environ.get("PORT", "7860"))  # 取 Hugging Face 注入的 PORT，默认7861方便本地测试
     
     print("启动配置:")
     print(f"  GeminiCLI客户端: 启用")
