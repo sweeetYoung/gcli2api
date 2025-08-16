@@ -14,5 +14,5 @@ COPY . .
 # 设置默认密码环境变量（可在 HF 上覆盖）
 ENV PASSWORD=pwd
 
-# Hugging Face 会自动启动 ASGI app，这里直接让 hypercorn 监听 $PORT
-CMD ["hypercorn", "web:app", "--bind", "0.0.0.0:$PORT", "--log-level", "info"]
+# 使用 shell 形式 CMD，让 $PORT 被正确展开
+CMD hypercorn web:app --bind 0.0.0.0:$PORT --log-level info
