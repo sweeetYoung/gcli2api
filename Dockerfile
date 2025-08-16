@@ -15,4 +15,4 @@ COPY . .
 ENV PASSWORD=pwd
 
 # 使用 shell 形式 CMD，让 $PORT 被正确展开
-CMD hypercorn web:app --bind 0.0.0.0:$PORT --log-level info
+CMD python web.py
