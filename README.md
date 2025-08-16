@@ -1,3 +1,10 @@
+
+---
+title: gcli2api
+sdk: docker
+app_port: 7860
+---
+
 # GeminiCLI to API
 
 **将 Gemini 转换为 OpenAI 兼容 API 接口**
