@@ -14,7 +14,10 @@ from .config import (
     DEFAULT_SAFETY_SETTINGS,
     get_base_model_name,
     get_thinking_budget,
-    should_include_thoughts
+    should_include_thoughts,
+    get_proxy_config,
+    get_auto_ban_enabled,
+    get_auto_ban_error_codes
 )
 import asyncio
 
@@ -34,12 +37,21 @@ def _create_error_response(message: str, status_code: int = 500) -> Response:
         media_type="application/json"
     )
 
-async def _handle_quota_exhausted(credential_manager: CredentialManager, status_code: int, current_file: str = None):
-    """Handle quota exhausted error by rotating credentials."""
+async def _handle_api_error(credential_manager: CredentialManager, status_code: int, response_content: str = ""):
+    """Handle API errors by rotating credentials when needed. Error recording should be done before calling this function."""
     if status_code == 429 and credential_manager:
-        log.warning("Google API returned status 429 - quota exhausted, switching credentials")
-        if current_file:
-            await credential_manager.record_error(current_file, status_code)
+        if response_content:
+            log.error(f"[ERROR] Google API returned status 429 - quota exhausted. Response details: {response_content[:500]}")
+        else:
+            log.error("[ERROR] Google API returned status 429 - quota exhausted, switching credentials")
+        await credential_manager.rotate_to_next_credential()
+    
+    # 处理自动封禁的错误码
+    elif get_auto_ban_enabled() and status_code in get_auto_ban_error_codes() and credential_manager:
+        if response_content:
+            log.error(f"[ERROR] Google API returned status {status_code} - auto ban triggered. Response details: {response_content[:500]}")
+        else:
+            log.warning(f"Google API returned status {status_code} - auto ban triggered, rotating credentials")
         await credential_manager.rotate_to_next_credential()
 
 async def _prepare_request_headers_and_payload(payload: dict, creds, credential_manager: CredentialManager):
@@ -97,10 +109,12 @@ async def send_gemini_request(payload: dict, is_streaming: bool = False, creds =
     final_post_data = json.dumps(final_payload)
 
     try:
+        proxy = get_proxy_config()
+        
         if is_streaming:
             # 流式请求：在生成器里打开 AsyncClient 和 client.stream，确保整个流式周期中 client 不被关闭
             async def event_stream():
-                async with httpx.AsyncClient(timeout=None) as client:
+                async with httpx.AsyncClient(timeout=None, proxy=proxy) as client:
                     async with client.stream(
                         "POST", target_url, content=final_post_data, headers=headers
                     ) as resp:
@@ -110,7 +124,7 @@ async def send_gemini_request(payload: dict, is_streaming: bool = False, creds =
             return StreamingResponse(event_stream(), media_type="text/event-stream")
 
         # 非流式请求保持原逻辑
-        async with httpx.AsyncClient(timeout=None) as client:
+        async with httpx.AsyncClient(timeout=None, proxy=proxy) as client:
             resp = await client.post(
                 target_url, content=final_post_data, headers=headers
             )
@@ -125,13 +139,41 @@ async def _handle_streaming_response(resp: httpx.Response, credential_manager: C
     
     # 检查HTTP错误
     if resp.status_code != 200:
-        log.error(f"Google API returned status {resp.status_code}")
-        
         # 记录错误并检查是否是 429 错误（配额用完），立即切换凭据
         current_file = credential_manager.get_current_file_path() if credential_manager else None
-        if current_file and credential_manager:
-            await credential_manager.record_error(current_file, resp.status_code)
-        await _handle_quota_exhausted(credential_manager, resp.status_code, current_file)
+        log.debug(f"[STREAMING] Error handling: status_code={resp.status_code}, current_file={current_file}")
+        
+        # 尝试获取响应内容用于详细错误显示
+        response_content = ""
+        try:
+            response_content = await resp.aread()
+            if isinstance(response_content, bytes):
+                response_content = response_content.decode('utf-8', errors='ignore')
+        except Exception as e:
+            log.debug(f"[STREAMING] Failed to read response content for error analysis: {e}")
+            response_content = ""
+        
+        # 显示详细错误信息
+        if resp.status_code == 429:
+            if response_content:
+                log.error(f"[ERROR] Google API returned status 429 (STREAMING). Response details: {response_content[:500]}")
+            else:
+                log.error(f"[ERROR] Google API returned status 429 (STREAMING)")
+        else:
+            if response_content:
+                log.error(f"[ERROR] Google API returned status {resp.status_code} (STREAMING). Response details: {response_content[:500]}")
+            else:
+                log.error(f"[ERROR] Google API returned status {resp.status_code} (STREAMING)")
+        
+        if credential_manager:
+            if current_file:
+                log.debug(f"[STREAMING] Calling record_error for file {current_file} with status_code {resp.status_code}")
+                log.debug(f"[STREAMING] Response content snippet: {response_content[:200]}...")
+                await credential_manager.record_error(current_file, resp.status_code, response_content)
+            else:
+                log.warning(f"[STREAMING] No current file path available for recording error {resp.status_code}")
+        
+        await _handle_api_error(credential_manager, resp.status_code, response_content)
         
         # 返回错误流
         async def error_generator():
@@ -161,7 +203,7 @@ async def _handle_streaming_response(resp: httpx.Response, credential_manager: C
                 if not success_recorded:
                     current_file = credential_manager.get_current_file_path() if credential_manager else None
                     if current_file and credential_manager:
-                        await credential_manager.record_success(current_file)
+                        await credential_manager.record_success(current_file, "chat_content")
                     success_recorded = True
                 
                 payload = chunk[len('data: '):]
@@ -193,7 +235,7 @@ async def _handle_non_streaming_response(resp: httpx.Response, credential_manage
             # 记录成功响应
             current_file = credential_manager.get_current_file_path() if credential_manager else None
             if current_file and credential_manager:
-                await credential_manager.record_success(current_file)
+                await credential_manager.record_success(current_file, "chat_content")
             
             raw = await resp.aread()
             google_api_response = raw.decode('utf-8')
@@ -214,13 +256,46 @@ async def _handle_non_streaming_response(resp: httpx.Response, credential_manage
                 media_type=resp.headers.get("Content-Type")
             )
     else:
-        log.error(f"Google API returned status {resp.status_code}")
-        
         # 记录错误并检查是否是 429 错误（配额用完），立即切换凭据
         current_file = credential_manager.get_current_file_path() if credential_manager else None
-        if current_file and credential_manager:
-            await credential_manager.record_error(current_file, resp.status_code)
-        await _handle_quota_exhausted(credential_manager, resp.status_code, current_file)
+        log.debug(f"[NON-STREAMING] Error handling: status_code={resp.status_code}, current_file={current_file}")
+        
+        # 获取响应内容用于详细错误显示
+        response_content = ""
+        try:
+            if hasattr(resp, 'content'):
+                response_content = resp.content
+                if isinstance(response_content, bytes):
+                    response_content = response_content.decode('utf-8', errors='ignore')
+            else:
+                response_content = await resp.aread()
+                if isinstance(response_content, bytes):
+                    response_content = response_content.decode('utf-8', errors='ignore')
+        except Exception as e:
+            log.debug(f"[NON-STREAMING] Failed to read response content for error analysis: {e}")
+            response_content = ""
+        
+        # 显示详细错误信息
+        if resp.status_code == 429:
+            if response_content:
+                log.error(f"[ERROR] Google API returned status 429 (NON-STREAMING). Response details: {response_content[:500]}")
+            else:
+                log.error(f"[ERROR] Google API returned status 429 (NON-STREAMING)")
+        else:
+            if response_content:
+                log.error(f"[ERROR] Google API returned status {resp.status_code} (NON-STREAMING). Response details: {response_content[:500]}")
+            else:
+                log.error(f"[ERROR] Google API returned status {resp.status_code} (NON-STREAMING)")
+        
+        if credential_manager:
+            if current_file:
+                log.debug(f"[NON-STREAMING] Calling record_error for file {current_file} with status_code {resp.status_code}")
+                log.debug(f"[NON-STREAMING] Response content snippet: {response_content[:200]}...")
+                await credential_manager.record_error(current_file, resp.status_code, response_content)
+            else:
+                log.warning(f"[NON-STREAMING] No current file path available for recording error {resp.status_code}")
+        
+        await _handle_api_error(credential_manager, resp.status_code, response_content)
         
         return _create_error_response(f"API error: {resp.status_code}", resp.status_code)
 

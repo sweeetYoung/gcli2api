@@ -335,6 +335,99 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+        
+        /* 文件管理新增样式 */
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px 20px;
+            text-align: center;
+            min-width: 120px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: block;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .stat-item.total { border-left: 4px solid #007bff; }
+        .stat-item.normal { border-left: 4px solid #28a745; }
+        .stat-item.cd { border-left: 4px solid #ffc107; }
+        .stat-item.disabled { border-left: 4px solid #6c757d; }
+        
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+        }
+        .filter-select:focus {
+            border-color: #4285f4;
+            outline: none;
+        }
+        
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #4285f4;
+        }
+        .pagination-btn:disabled {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination-btn.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        .page-size-select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         .refresh-btn {
             background-color: #17a2b8;
             color: white;
@@ -350,6 +443,67 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+        }
+        
+        /* 配置管理样式 */
+        .config-group {
+            background-color: #f8f9fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .config-group h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 8px;
+        }
+        .config-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            margin-bottom: 5px;
+        }
+        .config-input:focus {
+            border-color: #4285f4;
+            outline: none;
+        }
+        .config-input:disabled {
+            background-color: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .config-checkbox {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        .config-note {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .env-locked {
+            position: relative;
+        }
+        .env-locked::after {
+            content: "🔒 环境变量锚定";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -373,6 +527,7 @@
                 <button class="tab active" onclick="switchTab('oauth')">OAuth认证</button>
                 <button class="tab" onclick="switchTab('upload')">批量上传</button>
                 <button class="tab" onclick="switchTab('manage')">文件管理</button>
+                <button class="tab" onclick="switchTab('config')">配置管理</button>
             </div>
 
             <!-- OAuth认证标签页 -->
@@ -461,14 +616,137 @@
                 <h3>凭证文件管理</h3>
                 <p>管理所有认证文件，查看状态和执行操作</p>
                 
+                <!-- 状态统计 -->
+                <div class="stats-container" id="statsContainer">
+                    <div class="stat-item total">
+                        <span class="stat-number" id="statTotal">0</span>
+                        <span class="stat-label">总计</span>
+                    </div>
+                    <div class="stat-item normal">
+                        <span class="stat-number" id="statNormal">0</span>
+                        <span class="stat-label">正常</span>
+                    </div>
+                    <div class="stat-item cd">
+                        <span class="stat-number" id="statCd">0</span>
+                        <span class="stat-label">CD中</span>
+                    </div>
+                    <div class="stat-item disabled">
+                        <span class="stat-number" id="statDisabled">0</span>
+                        <span class="stat-label">禁用</span>
+                    </div>
+                </div>
+                
                 <div class="manage-actions">
                     <button class="refresh-btn" onclick="refreshCredsStatus()">刷新状态</button>
                     <button class="download-all-btn" onclick="downloadAllCreds()">打包下载所有文件</button>
                 </div>
                 
+                <!-- 筛选和分页控件 -->
+                <div class="filter-container">
+                    <label for="statusFilter">状态筛选：</label>
+                    <select id="statusFilter" class="filter-select" onchange="applyFilters()">
+                        <option value="all">全部</option>
+                        <option value="normal">正常</option>
+                        <option value="cd">CD中</option>
+                        <option value="disabled">禁用</option>
+                    </select>
+                    
+                    <label for="pageSizeSelect">每页显示：</label>
+                    <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize()">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                
                 <div id="credsListSection">
                     <div class="loading" id="credsLoading">正在加载凭证文件...</div>
                     <div id="credsList"></div>
+                    
+                    <!-- 分页控件 -->
+                    <div class="pagination-container" id="paginationContainer" style="display: none;">
+                        <button class="pagination-btn" id="prevPageBtn" onclick="changePage(-1)">上一页</button>
+                        <div class="pagination-info" id="paginationInfo">第 1 页，共 1 页</div>
+                        <button class="pagination-btn" id="nextPageBtn" onclick="changePage(1)">下一页</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 配置管理标签页 -->
+            <div id="configTab" class="tab-content">
+                <h3>配置管理</h3>
+                <p>管理系统配置参数，修改后立即生效</p>
+                
+                <div class="manage-actions">
+                    <button class="refresh-btn" onclick="loadConfig()">刷新配置</button>
+                    <button class="btn" onclick="saveConfig()">保存配置</button>
+                </div>
+                
+                <div id="configSection">
+                    <div class="loading" id="configLoading">正在加载配置...</div>
+                    <div id="configForm" class="hidden">
+                        <div class="config-group">
+                            <h4>基础配置</h4>
+                            
+                            <div class="form-group">
+                                <label for="codeAssistEndpoint">Code Assist Endpoint:</label>
+                                <input type="text" id="codeAssistEndpoint" class="config-input" />
+                                <small class="config-note">Google Cloud Code Assist API端点地址</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="credentialsDir">凭证目录路径:</label>
+                                <input type="text" id="credentialsDir" class="config-input" />
+                                <small class="config-note">存储认证文件的目录路径</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="proxy">代理设置:</label>
+                                <input type="text" id="proxy" class="config-input" placeholder="例如: http://proxy:8080 或 socks5://proxy:1080" />
+                                <small class="config-note">HTTP/HTTPS/SOCKS5代理地址，留空表示不使用代理</small>
+                            </div>
+                        </div>
+                        
+                        <div class="config-group">
+                            <h4>自动封禁配置</h4>
+                            
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="autoBanEnabled" class="config-checkbox" />
+                                    启用自动封禁
+                                </label>
+                                <small class="config-note">遇到指定错误码时自动禁用凭证</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="autoBanErrorCodes">自动封禁错误码:</label>
+                                <input type="text" id="autoBanErrorCodes" class="config-input" placeholder="例如: 400,403" />
+                                <small class="config-note">用逗号分隔的错误码列表</small>
+                            </div>
+                        </div>
+                        
+                        <div class="config-group">
+                            <h4>性能配置</h4>
+                            
+                            <div class="form-group">
+                                <label for="callsPerRotation">凭证轮换调用次数:</label>
+                                <input type="number" id="callsPerRotation" class="config-input" min="1" max="100" />
+                                <small class="config-note">每个凭证使用多少次后轮换到下一个</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="httpTimeout">HTTP超时时间(秒):</label>
+                                <input type="number" id="httpTimeout" class="config-input" min="5" max="300" />
+                                <small class="config-note">HTTP请求超时时间</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="maxConnections">最大连接数:</label>
+                                <input type="number" id="maxConnections" class="config-input" min="10" max="1000" />
+                                <small class="config-note">HTTP连接池最大连接数</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -482,6 +760,18 @@
         let selectedFiles = [];
         let authToken = '';
         let credsData = {};
+        
+        // 分页和筛选相关变量
+        let filteredCredsData = {};
+        let currentPage = 1;
+        let pageSize = 20;
+        let currentFilter = 'all';
+        let statsData = {
+            total: 0,
+            normal: 0,
+            cd: 0,
+            disabled: 0
+        };
 
         function showStatus(message, type = 'info') {
             console.log('showStatus called:', message, type);
@@ -554,6 +844,10 @@
             // 如果切换到文件管理页面，自动加载数据
             if (tabName === 'manage') {
                 refreshCredsStatus();
+            }
+            // 如果切换到配置管理页面，自动加载配置
+            if (tabName === 'config') {
+                loadConfig();
             }
         }
 
@@ -803,14 +1097,16 @@
                 if (response.ok) {
                     credsData = data.creds;
                     
-                    // 调试：检查特定文件的状态
-                    for (const [fullPath, credInfo] of Object.entries(credsData)) {
-                        if (credInfo.filename.includes('atomic-affinity')) {
-                            console.log(`File ${credInfo.filename} status:`, credInfo.status);
-                        }
-                    }
+                    // 计算统计数据
+                    calculateStats();
                     
-                    renderCredsList();
+                    // 更新统计显示
+                    updateStatsDisplay();
+                    
+                    // 应用筛选并显示第一页
+                    currentPage = 1;
+                    applyFilters();
+                    
                     showStatus(`已加载 ${Object.keys(credsData).length} 个凭证文件`, 'success');
                 } else {
                     showStatus(`加载失败: ${data.detail || data.error || '未知错误'}`, 'error');
@@ -823,19 +1119,138 @@
             }
         }
 
+        // 计算统计数据
+        function calculateStats() {
+            statsData = {
+                total: 0,
+                normal: 0,
+                cd: 0,
+                disabled: 0
+            };
+            
+            for (const [fullPath, credInfo] of Object.entries(credsData)) {
+                statsData.total++;
+                
+                if (credInfo.status.disabled) {
+                    statsData.disabled++;
+                } else if (credInfo.status.in_cd) {
+                    statsData.cd++;
+                } else {
+                    statsData.normal++;
+                }
+            }
+        }
+        
+        // 更新统计显示
+        function updateStatsDisplay() {
+            document.getElementById('statTotal').textContent = statsData.total;
+            document.getElementById('statNormal').textContent = statsData.normal;
+            document.getElementById('statCd').textContent = statsData.cd;
+            document.getElementById('statDisabled').textContent = statsData.disabled;
+        }
+        
+        // 应用筛选
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            currentFilter = statusFilter;
+            filteredCredsData = {};
+            
+            for (const [fullPath, credInfo] of Object.entries(credsData)) {
+                let shouldInclude = false;
+                
+                switch (statusFilter) {
+                    case 'all':
+                        shouldInclude = true;
+                        break;
+                    case 'normal':
+                        shouldInclude = !credInfo.status.disabled && !credInfo.status.in_cd;
+                        break;
+                    case 'cd':
+                        shouldInclude = credInfo.status.in_cd;
+                        break;
+                    case 'disabled':
+                        shouldInclude = credInfo.status.disabled;
+                        break;
+                }
+                
+                if (shouldInclude) {
+                    filteredCredsData[fullPath] = credInfo;
+                }
+            }
+            
+            currentPage = 1;
+            renderCredsList();
+            updatePagination();
+        }
+        
+        // 获取当前页数据
+        function getCurrentPageData() {
+            const filteredEntries = Object.entries(filteredCredsData);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            return filteredEntries.slice(startIndex, endIndex);
+        }
+        
+        // 获取总页数
+        function getTotalPages() {
+            return Math.ceil(Object.keys(filteredCredsData).length / pageSize);
+        }
+        
+        // 渲染凭证列表
         function renderCredsList() {
             const credsList = document.getElementById('credsList');
             credsList.innerHTML = '';
             
-            if (Object.keys(credsData).length === 0) {
-                credsList.innerHTML = '<p style="text-align: center; color: #666;">暂无凭证文件</p>';
+            const currentPageData = getCurrentPageData();
+            
+            if (currentPageData.length === 0) {
+                const message = Object.keys(credsData).length === 0 ? 
+                    '暂无凭证文件' : '当前筛选条件下暂无数据';
+                credsList.innerHTML = `<p style="text-align: center; color: #666;">${message}</p>`;
+                document.getElementById('paginationContainer').style.display = 'none';
                 return;
             }
             
-            for (const [fullPath, credInfo] of Object.entries(credsData)) {
+            for (const [fullPath, credInfo] of currentPageData) {
                 const card = createCredCard(fullPath, credInfo);
                 credsList.appendChild(card);
             }
+            
+            document.getElementById('paginationContainer').style.display = getTotalPages() > 1 ? 'flex' : 'none';
+        }
+        
+        // 更新分页信息
+        function updatePagination() {
+            const totalPages = getTotalPages();
+            const totalItems = Object.keys(filteredCredsData).length;
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, totalItems);
+            
+            document.getElementById('paginationInfo').textContent = 
+                `第 ${currentPage} 页，共 ${totalPages} 页 (显示 ${startItem}-${endItem}，共 ${totalItems} 项)`;
+            
+            document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+        }
+        
+        // 切换页面
+        function changePage(direction) {
+            const totalPages = getTotalPages();
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderCredsList();
+                updatePagination();
+            }
+        }
+        
+        // 改变每页显示数量
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+            currentPage = 1;
+            renderCredsList();
+            updatePagination();
         }
 
         function createCredCard(fullPath, credInfo) {
@@ -867,8 +1282,19 @@
                 statusBadges += '<span class="status-badge cd">CD中</span>';
             }
             
+            // 调试：记录 error_codes
+            console.log(`Error codes for ${filename}:`, status.error_codes);
+            
             if (status.error_codes && status.error_codes.length > 0) {
-                statusBadges += `<span class="error-codes">${status.error_codes.join(', ')}</span>`;
+                statusBadges += `<span class="error-codes">错误码: ${status.error_codes.join(', ')}</span>`;
+                // 检查是否包含自动封禁的错误码
+                const autoBanErrors = status.error_codes.filter(code => code === 400 || code === 403);
+                if (autoBanErrors.length > 0 && status.disabled) {
+                    statusBadges += `<span class="status-badge" style="background-color: #e74c3c; color: white;">AUTO_BAN</span>`;
+                }
+            } else {
+                // 显示无错误码状态
+                statusBadges += `<span class="status-badge" style="background-color: #28a745; color: white;">无错误</span>`;
             }
             
             // 为HTML ID生成安全的标识符
@@ -1036,6 +1462,113 @@
             }
             
             await credAction(filename, 'delete');
+        }
+
+        // 配置管理相关函数
+        let currentConfig = {};
+        let envLockedFields = new Set();
+
+        async function loadConfig() {
+            const configLoading = document.getElementById('configLoading');
+            const configForm = document.getElementById('configForm');
+            
+            try {
+                configLoading.style.display = 'block';
+                configForm.classList.add('hidden');
+                
+                const response = await fetch('/config/get', {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentConfig = data.config;
+                    envLockedFields = new Set(data.env_locked || []);
+                    
+                    populateConfigForm();
+                    configForm.classList.remove('hidden');
+                    showStatus('配置加载成功', 'success');
+                } else {
+                    showStatus(`加载配置失败: ${data.detail || data.error || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                console.error('loadConfig error:', error);
+                showStatus(`网络错误: ${error.message}`, 'error');
+            } finally {
+                configLoading.style.display = 'none';
+            }
+        }
+
+        function populateConfigForm() {
+            // 基础配置
+            setConfigField('codeAssistEndpoint', currentConfig.code_assist_endpoint || '');
+            setConfigField('credentialsDir', currentConfig.credentials_dir || '');
+            setConfigField('proxy', currentConfig.proxy || '');
+            
+            // 自动封禁配置
+            document.getElementById('autoBanEnabled').checked = currentConfig.auto_ban_enabled || false;
+            setConfigField('autoBanErrorCodes', (currentConfig.auto_ban_error_codes || []).join(','));
+            
+            // 性能配置
+            setConfigField('callsPerRotation', currentConfig.calls_per_rotation || 10);
+            setConfigField('httpTimeout', currentConfig.http_timeout || 30);
+            setConfigField('maxConnections', currentConfig.max_connections || 100);
+        }
+
+        function setConfigField(fieldId, value) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = value;
+                
+                // 检查是否被环境变量锚定
+                const configKey = fieldId.replace(/([A-Z])/g, '_$1').toLowerCase();
+                if (envLockedFields.has(configKey)) {
+                    field.disabled = true;
+                    field.classList.add('env-locked');
+                } else {
+                    field.disabled = false;
+                    field.classList.remove('env-locked');
+                }
+            }
+        }
+
+        async function saveConfig() {
+            try {
+                const config = {
+                    code_assist_endpoint: document.getElementById('codeAssistEndpoint').value.trim(),
+                    credentials_dir: document.getElementById('credentialsDir').value.trim(),
+                    proxy: document.getElementById('proxy').value.trim(),
+                    auto_ban_enabled: document.getElementById('autoBanEnabled').checked,
+                    auto_ban_error_codes: document.getElementById('autoBanErrorCodes').value
+                        .split(',')
+                        .map(code => parseInt(code.trim()))
+                        .filter(code => !isNaN(code)),
+                    calls_per_rotation: parseInt(document.getElementById('callsPerRotation').value) || 10,
+                    http_timeout: parseInt(document.getElementById('httpTimeout').value) || 30,
+                    max_connections: parseInt(document.getElementById('maxConnections').value) || 100
+                };
+
+                const response = await fetch('/config/save', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ config: config })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('配置保存成功，已立即生效', 'success');
+                    // 重新加载配置以获取最新状态
+                    setTimeout(() => loadConfig(), 1000);
+                } else {
+                    showStatus(`保存配置失败: ${data.detail || data.error || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                console.error('saveConfig error:', error);
+                showStatus(`网络错误: ${error.message}`, 'error');
+            }
         }
 
         // 页面加载时检查状态
